@@ -9,14 +9,14 @@
       "src": "*.html",
       "use": "@vercel/static"
     },
-   {
-  "src": "public/*.css",
-  "use": "@vercel/static"
-},
-{
-  "src": "public/*.js",
-  "use": "@vercel/static"
-}
+    {
+      "src": "*.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.js",
+      "use": "@vercel/static"
+    }
   ],
   "routes": [
     {
@@ -26,6 +26,14 @@
     {
       "src": "/(.*)",
       "dest": "/redesigned_AI.html"
+    }
+    {
+      "src": "/(.*)",
+      "dest": "/style.css"
+    }
+    {
+      "src": "/(.*)",
+      "dest": "/script.js"
     }
   ]
 }
