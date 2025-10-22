@@ -4,6 +4,7 @@ const url = require('url');
 
 const PORT = 3000;
 const TARGET_URL = 'https://d7115248324e.ngrok-free.app';
+app.use(cors({ origin: 'https://ai-homework-two.vercel.app' }));
 
 // 創建代理服務器
 const server = http.createServer((req, res) => {
@@ -86,4 +87,5 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
+
 
