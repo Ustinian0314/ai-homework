@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>AI Workspace</title>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // 設備檢測和響應式配置
+    window.DeviceDetector = {
+      // 檢測設備類型
+      detectDevice: function() {
+        const userAgent = navigator.userAgent.toLowerCase();
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        const pixelRatio = window.devicePixelRatio || 1;
+        
+        // iPhone 檢測
+        const isIPhone = /iphone/.test(userAgent);
+        // iPad 檢測
+        const isIPad = /ipad/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        // Android 手機檢測
+        const isAndroidPhone = /android/.test(userAgent) && /mobile/.test(userAgent);
+        // Android 平板檢測
+        const isAndroidTablet = /android/.test(userAgent) && !/mobile/.test(userAgent);
+        
+        // 根據屏幕尺寸進一步判斷
+        let deviceType = 'desktop';
+        let deviceModel = 'unknown';
+        
+        if (isIPhone) {
+          deviceType = 'mobile';
+          // 檢測具體iPhone型號
+          if (screenWidth === 375 && screenHeight === 667) deviceModel = 'iPhone 6/7/8';
+          else if (screenWidth === 414 && screenHeight === 896) deviceModel = 'iPhone 11/XR';
+          else if (screenWidth === 375 && screenHeight === 812) deviceModel = 'iPhone X/XS/11 Pro';
+          else if (screenWidth === 414 && screenHeight === 926) deviceModel = 'iPhone 12/13/14 Pro Max';
+          else if (screenWidth === 390 && screenHeight === 844) deviceModel = 'iPhone 12/13/14';
+          else deviceModel = 'iPhone';
+        } else if (isIPad) {
+          deviceType = 'tablet';
+          if (screenWidth === 768 && screenHeight === 1024) deviceModel = 'iPad';
+          else if (screenWidth === 834 && screenHeight === 1112) deviceModel = 'iPad Pro 10.5"';
+          else if (screenWidth === 1024 && screenHeight === 1366) deviceModel = 'iPad Pro 12.9"';
+          else if (screenWidth === 820 && screenHeight === 1180) deviceModel = 'iPad Air 4th/5th';
+          else if (screenWidth === 834 && screenHeight === 1194) deviceModel = 'iPad Air 3rd';
+          else if (screenWidth === 1024 && screenHeight === 1366) deviceModel = 'iPad Pro 12.9"';
+          else if (screenWidth === 1024 && screenHeight === 1366) deviceModel = 'iPad Pro 12.9"';
+          else deviceModel = 'iPad';
+        } else if (isAndroidPhone) {
+          deviceType = 'mobile';
+          deviceModel = 'Android Phone';
+        } else if (isAndroidTablet) {
+          deviceType = 'tablet';
+          deviceModel = 'Android Tablet';
+        } else if (screenWidth < 768) {
+          deviceType = 'mobile';
+          deviceModel = 'Small Screen';
+        } else if (screenWidth < 1024) {
+          deviceType = 'tablet';
+          deviceModel = 'Medium Screen';
+        }
+        
+        return {
+          type: deviceType,
+          model: deviceModel,
+          width: screenWidth,
+          height: screenHeight,
+          pixelRatio: pixelRatio,
+          isTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0
+        };
+      },
+      
+      // 應用響應式配置
+      applyResponsiveConfig: function(deviceInfo) {
+        const body = document.body;
+        const container = document.querySelector('.container');
+        
+        // 清除之前的設備類別
+        body.classList.remove('device-mobile', 'device-tablet', 'device-desktop');
+        body.classList.remove('device-iphone', 'device-ipad', 'device-android');
+        
+        // 添加設備類型類別
+        body.classList.add(`device-${deviceInfo.type}`);
+        
+        // 添加具體設備類別
+        if (deviceInfo.model.includes('iPhone')) {
+          body.classList.add('device-iphone');
+        } else if (deviceInfo.model.includes('iPad')) {
+          body.classList.add('device-ipad');
+        } else if (deviceInfo.model.includes('Android')) {
+          body.classList.add('device-android');
+        }
+        
+        // 根據設備類型調整佈局
+        if (deviceInfo.type === 'mobile') {
+          this.applyMobileLayout(deviceInfo);
+        } else if (deviceInfo.type === 'tablet') {
+          this.applyTabletLayout(deviceInfo);
+        } else {
+          this.applyDesktopLayout(deviceInfo);
+        }
+        
+        // 設置CSS變量
+        document.documentElement.style.setProperty('--device-width', deviceInfo.width + 'px');
+        document.documentElement.style.setProperty('--device-height', deviceInfo.height + 'px');
+        document.documentElement.style.setProperty('--device-ratio', deviceInfo.pixelRatio);
+        
+        console.log('設備檢測完成:', deviceInfo);
+      },
+      
+      // 手機佈局配置
+      applyMobileLayout: function(deviceInfo) {
+        const container = document.querySelector('.container');
+        const leftSidebar = document.querySelector('.left-sidebar');
+        const rightSidebar = document.querySelector('.right-sidebar');
+        const mainContent = document.querySelector('.main-content');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const rightSidebarToggle = document.getElementById('rightSidebarToggle');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        
+        // 手機端：顯示所有切換按鈕
+        if (sidebarToggle) {
+          sidebarToggle.style.display = 'flex';
+        }
+        if (rightSidebarToggle) {
+          rightSidebarToggle.style.display = 'flex';
+        }
+        
+        // 手機端：側邊欄默認隱藏，iPad風格樣式
+        if (leftSidebar) {
+          leftSidebar.style.display = 'flex';
+          leftSidebar.style.position = 'fixed';
+          leftSidebar.style.top = '60px';
+          leftSidebar.style.left = '-100%';
+          leftSidebar.style.width = '85vw';
+          leftSidebar.style.maxWidth = '400px';
+          leftSidebar.style.height = 'calc(100vh - 60px)';
+          leftSidebar.style.zIndex = '1000';
+          leftSidebar.style.backgroundColor = '#2d2d2d';
+          leftSidebar.style.border = '1px solid #4a4a4a';
+          leftSidebar.style.borderRadius = '0 16px 16px 0';
+          leftSidebar.style.boxShadow = '4px 0 20px rgba(0, 0, 0, 0.25)';
+          leftSidebar.style.overflowY = 'auto';
+          leftSidebar.style.padding = '20px';
+          leftSidebar.classList.remove('show');
+        }
+        
+        // 為手機端添加間距容器類
+        const chatContainer = document.querySelector('.chat-container');
+        const conversationSection = document.querySelector('.conversation-section');
+        if (chatContainer) {
+          chatContainer.classList.add('chat-container');
+        }
+        if (conversationSection) {
+          conversationSection.classList.add('conversation-section');
+        }
+        
+        if (rightSidebar) {
+          rightSidebar.style.display = 'flex';
+          rightSidebar.style.position = 'fixed';
+          rightSidebar.style.top = '60px';
+          rightSidebar.style.right = '-100%';
+          rightSidebar.style.width = '85vw';
+          rightSidebar.style.maxWidth = '400px';
+          rightSidebar.style.height = 'calc(100vh - 60px)';
+          rightSidebar.style.zIndex = '1000';
+          rightSidebar.style.backgroundColor = '#2d2d2d';
+          rightSidebar.style.border = '1px solid #4a4a4a';
+          rightSidebar.style.borderRadius = '16px 0 0 16px';
+          rightSidebar.style.boxShadow = '-4px 0 20px rgba(0, 0, 0, 0.25)';
+          rightSidebar.style.overflowY = 'auto';
+          rightSidebar.style.padding = '20px';
+          rightSidebar.classList.remove('show');
+        }
+        
+        if (sidebarOverlay) {
+          sidebarOverlay.classList.remove('show');
+        }
+        
+        if (mainContent) {
+          mainContent.style.width = '100%';
+          mainContent.style.margin = '0';
+          mainContent.style.padding = '16px';
+          mainContent.style.borderRadius = '16px';
+          mainContent.style.backgroundColor = '#2d2d2d';
+          mainContent.style.border = '1px solid #4a4a4a';
+          mainContent.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
+          mainContent.classList.remove('sidebar-open');
+        }
+        
+        // 調整頂部導航欄 - iPad風格
+        const topNavbar = document.querySelector('.top-navbar');
+        if (topNavbar) {
+          topNavbar.style.padding = '0 16px';
+          topNavbar.style.height = '56px';
+          topNavbar.style.top = '8px';
+          topNavbar.style.left = '8px';
+          topNavbar.style.right = '8px';
+          topNavbar.style.borderRadius = '16px';
+          topNavbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
+        }
+        
+        // 調整容器高度 - iPad風格
+        if (container) {
+          container.style.height = 'calc(100vh - 60px)';
+          container.style.marginTop = '60px';
+          container.style.padding = '8px';
+          container.style.gap = '8px';
+          container.style.backgroundColor = '#1a1a1a';
+        }
+      },
+      
+      // 平板佈局配置
+      applyTabletLayout: function(deviceInfo) {
+        const container = document.querySelector('.container');
+        const leftSidebar = document.querySelector('.left-sidebar');
+        const rightSidebar = document.querySelector('.right-sidebar');
+        const mainContent = document.querySelector('.main-content');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const rightSidebarToggle = document.getElementById('rightSidebarToggle');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        
+        // 平板端：顯示所有切換按鈕
+        if (sidebarToggle) {
+          sidebarToggle.style.display = 'flex';
+        }
+        if (rightSidebarToggle) {
+          rightSidebarToggle.style.display = 'flex';
+        }
+        
+        if (sidebarOverlay) {
+          sidebarOverlay.classList.remove('show');
+        }
+        
+        // 平板端：側邊欄默認隱藏，專注對話，更舒適的大小
+        // 根據iPad型號設置不同的側邊欄寬度
+        let sidebarWidth = '400px';
+        if (deviceInfo.model && deviceInfo.model.includes('iPad Pro 12.9')) {
+          sidebarWidth = '450px';
+        } else if (deviceInfo.model && (deviceInfo.model.includes('iPad Pro 10.5') || deviceInfo.model.includes('iPad Air'))) {
+          sidebarWidth = '380px';
+        }
+        
+        if (leftSidebar) {
+          leftSidebar.style.display = 'flex';
+          leftSidebar.style.position = 'fixed';
+          leftSidebar.style.top = '60px';
+          leftSidebar.style.left = '-100%';
+          leftSidebar.style.width = sidebarWidth;
+          leftSidebar.style.height = 'calc(100vh - 60px)';
+          leftSidebar.style.zIndex = '1000';
+          leftSidebar.classList.remove('show');
+        }
+        
+        if (rightSidebar) {
+          rightSidebar.style.display = 'flex';
+          rightSidebar.style.position = 'fixed';
+          rightSidebar.style.top = '60px';
+          rightSidebar.style.right = '-100%';
+          rightSidebar.style.width = sidebarWidth;
+          rightSidebar.style.height = 'calc(100vh - 60px)';
+          rightSidebar.style.zIndex = '1000';
+          rightSidebar.classList.remove('show');
+        }
+        
+        if (mainContent) {
+          mainContent.style.flex = '1';
+          mainContent.style.width = '100%';
+          mainContent.style.margin = '0';
+          mainContent.classList.remove('sidebar-open', 'left-sidebar-open', 'right-sidebar-open');
+          // 為iPad設置動態邊距
+          mainContent.setAttribute('data-sidebar-width', sidebarWidth);
+        }
+        
+        // 調整頂部導航欄
+        const topNavbar = document.querySelector('.top-navbar');
+        if (topNavbar) {
+          topNavbar.style.padding = '0 16px';
+          topNavbar.style.height = '55px';
+        }
+        
+        // 調整容器
+        if (container) {
+          container.style.height = 'calc(100vh - 70px)';
+          container.style.marginTop = '70px';
+          container.style.padding = '0px';
+          container.style.gap = '0px';
+        }
+      },
+      
+      // 桌面佈局配置
+      applyDesktopLayout: function(deviceInfo) {
+        const container = document.querySelector('.container');
+        const sidebars = document.querySelectorAll('.sidebar');
+        const mainContent = document.querySelector('.main-content');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        
+        // 桌面端：隱藏所有側邊欄切換按鈕
+        if (sidebarToggle) {
+          sidebarToggle.style.display = 'none';
+        }
+        
+        const rightSidebarToggle = document.getElementById('rightSidebarToggle');
+        if (rightSidebarToggle) {
+          rightSidebarToggle.style.display = 'none';
+        }
+        
+        if (sidebarOverlay) {
+          sidebarOverlay.classList.remove('show');
+        }
+        
+        // 桌面端：顯示所有側邊欄，恢復原始佈局
+        sidebars.forEach(sidebar => {
+          sidebar.style.display = 'flex';
+          sidebar.style.position = 'static';
+          sidebar.style.width = 'auto';
+          sidebar.style.height = 'auto';
+          sidebar.style.left = 'auto';
+          sidebar.style.right = 'auto';
+          sidebar.style.top = 'auto';
+          sidebar.style.zIndex = 'auto';
+          sidebar.style.backgroundColor = '';
+          sidebar.style.border = '';
+          sidebar.style.borderRadius = '';
+          sidebar.style.boxShadow = '';
+          sidebar.style.overflowY = '';
+          sidebar.classList.remove('show');
+        });
+        
+        if (mainContent) {
+          mainContent.style.flex = '1';
+          mainContent.style.width = 'auto';
+          mainContent.style.margin = '0';
+          mainContent.style.marginLeft = '0';
+          mainContent.style.marginRight = '0';
+          mainContent.classList.remove('sidebar-open', 'left-sidebar-open', 'right-sidebar-open');
+        }
+        
+        // 調整頂部導航欄
+        const topNavbar = document.querySelector('.top-navbar');
+        if (topNavbar) {
+          topNavbar.style.padding = '0 20px';
+          topNavbar.style.height = '60px';
+        }
+        
+        // 調整容器
+        if (container) {
+          container.style.height = 'calc(100vh - 80px)';
+          container.style.marginTop = '80px';
+          container.style.padding = '8px';
+          container.style.gap = '8px';
+        }
+      },
+      
+      // 初始化設備檢測
+      init: function() {
+        const deviceInfo = this.detectDevice();
+        this.applyResponsiveConfig(deviceInfo);
+        
+        // 監聽窗口大小變化
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+          clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(() => {
+            const newDeviceInfo = this.detectDevice();
+            this.applyResponsiveConfig(newDeviceInfo);
+          }, 250);
+        });
+        
+        // 監聽設備方向變化
+        window.addEventListener('orientationchange', () => {
+          setTimeout(() => {
+            const newDeviceInfo = this.detectDevice();
+            this.applyResponsiveConfig(newDeviceInfo);
+          }, 500);
+        });
+        
+        return deviceInfo;
+      }
+    };
+  </script>
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      }
+    };
+  </script>
+  <!-- 移除 polyfill.io，避免 DNS 解析錯誤且現代瀏覽器通常不需要 -->
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  
+  <!-- 頂部導航欄 -->
+  <div class="top-navbar">
+    <div class="navbar-left">
+      <div class="navbar-icon">🤖</div>
+      <div class="navbar-title">AI作業輔導助手</div>
+    </div>
+    <div class="navbar-right">
+      <button id="sidebarToggle" class="sidebar-toggle-btn" onclick="toggleSidebar()" style="display: none;" title="來源">📁</button>
+      <button id="rightSidebarToggle" class="right-sidebar-toggle-btn" onclick="toggleRightSidebar()" style="display: none;" title="工作室">📋</button>
+      <button id="loginBtn" class="login-btn" onclick="toggleLoginModal()">登入</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- 側邊欄覆蓋層 -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeAllSidebars()"></div>
+    
+    <div class="sidebar left-sidebar">
+      <!-- 來源頁面 -->
+      <div id="sourcesPage" class="sidebar-page active">
+        <div class="sidebar-header">
+          <h3>來源</h3>
+          <div class="sidebar-actions">
+            <input id="fileUpload" type="file" accept="*/*" style="display:none" multiple />
+            <input id="cameraInput" type="file" accept="image/*" capture="environment" style="display:none" />
+            <button class="new-source-btn" onclick="triggerFileUpload()">+ 新增</button>
+            <button class="camera-btn" onclick="triggerCameraCapture()">📷 拍照</button>
+            <button class="search-source-btn" onclick="showExplorePage()">探索</button>
+          </div>
+        </div>
+        <div class="sidebar-content">
+          <div id="sourcesList" class="sources-list">
+            <p class="no-sources">這裡會顯示已儲存的來源</p>
+          </div>
+        </div>
+        <div class="sidebar-footer">
+        </div>
+      </div>
+      
+      <!-- 探索頁面 -->
+      <div id="explorePage" class="sidebar-page">
+        <div class="sidebar-header">
+          <h3>探索</h3>
+          <div class="sidebar-actions">
+            <button class="back-to-sources-btn" onclick="showSourcesPage()">← 返回</button>
+          </div>
+        </div>
+        <div class="sidebar-content">
+          <div id="chatHistory" class="chat-history">
+            <p class="no-history">這裡會顯示歷史對話</p>
+          </div>
+        </div>
+        <div class="sidebar-footer">
+          <span class="history-info">點擊對話可重新載入</span>
+        </div>
+      </div>
+    </div>
+    <div class="main-content">
+        <div class="chat-header">
+            <h3>對話 <span id="currentChatLabel" class="current-chat-label"></span></h3>
+            <button id="newChatBtn" class="new-chat-btn" onclick="createNewChat()">+ 新聊天</button>
+        </div>
+        <div class="chat-body">
+            <div id="chatMessages" class="chat-messages">
+                <!-- 聊天消息會在這裡動態添加 -->
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <textarea id="userInput" placeholder="在此輸入對話內容，例如：請幫我描述這張圖片..." spellcheck="false"></textarea>
+            <div class="chat-actions">
+                <span id="status" class="status"></span>
+                <div class="input-buttons">
+                    <button id="voiceBtn" class="voice-btn" type="button" title="語音輸入">🎤</button>
+                    <button id="sendBtn" type="button">發送訊息</button>
+                </div>
+            </div>
+        </div>
+        <div class="request-preview-area">
+            <label for="requestView">TestView（最後一次請求預覽）</label>
+            <textarea id="requestView" readonly></textarea>
+        </div>
+    </div>
+    <div class="sidebar right-sidebar">
+      <div class="sidebar-header">
+        <h3>工作室</h3>
+      </div>
+      <div class="workspace-items">
+        <div class="workspace-item audio-summary" data-tooltip="根據當前題目智能推薦相似練習題,鞏固學習效果">
+          <div class="item-icon" id="icon-audio-summary">📚</div>
+          <div class="item-content">
+            <span class="item-label">相似題推薦</span>
+            <div class="edit-icon" onclick="openIconSelector('audio-summary')">✏️</div>
+          </div>
+          <div class="workspace-actions">
+            <button class="workspace-action-btn" onclick="generateSimilarQuestions()">⚙️ 產生相似練習題</button>
+          </div>
+          <div id="similarQuestionsOutput" class="workspace-output"></div>
+        </div>
+        <div class="workspace-item video-summary" data-tooltip="深入解析相關知識點,提供延伸學習資料">
+          <div class="item-icon" id="icon-video-summary">⭐</div>
+          <div class="item-content">
+            <span class="item-label">知識點擴展</span>
+            <div class="edit-icon" onclick="openIconSelector('video-summary')">✏️</div>
+          </div>
+        </div>
+        <div class="workspace-item mind-map" data-tooltip="自動收集錯題,建立個人專屬複習資料庫">
+          <div class="item-icon" id="icon-mind-map">📝</div>
+          <div class="item-content">
+            <span class="item-label">錯題本</span>
+            <div class="edit-icon" onclick="openIconSelector('mind-map')">✏️</div>
+          </div>
+        </div>
+        <div class="workspace-item report" data-tooltip="隨時向AI提問,獲得即時專業解答">
+          <div class="item-icon" id="icon-report">💬</div>
+          <div class="item-content">
+            <span class="item-label">智能問答</span>
+            <div class="edit-icon" onclick="openIconSelector('report')">✏️</div>
+          </div>
+        </div>
+      </div>
+       <div class="workspace-footer">
+        <button>新增記事</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 登入模態框 -->
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>用戶登入</h3>
+        <span class="close" onclick="closeLoginModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <form id="loginForm" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="username">用戶名或郵箱</label>
+            <input type="text" id="username" name="username" required>
+          </div>
+          <div class="form-group">
+            <label for="password">密碼</label>
+            <input type="password" id="password" name="password" required>
+          </div>
+          <div class="form-options">
+            <label class="remember-me">
+              <input type="checkbox" id="rememberMe" name="rememberMe">
+              記住我
+            </label>
+            <a href="#" class="forgot-password">忘記密碼？</a>
+          </div>
+          <button type="submit" class="login-submit-btn">登入</button>
+        </form>
+        <div class="login-footer">
+          <p>還沒有帳號？ <a href="#" onclick="switchToRegister()">立即註冊</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 註冊模態框 -->
+  <div id="registerModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>用戶註冊</h3>
+        <span class="close" onclick="closeRegisterModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <form id="registerForm" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label for="regUsername">用戶名</label>
+            <input type="text" id="regUsername" name="username" required>
+          </div>
+          <div class="form-group">
+            <label for="regEmail">郵箱</label>
+            <input type="email" id="regEmail" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="regPassword">密碼</label>
+            <input type="password" id="regPassword" name="password" required>
+          </div>
+          <div class="form-group">
+            <label for="regConfirmPassword">確認密碼</label>
+            <input type="password" id="regConfirmPassword" name="confirmPassword" required>
+          </div>
+          <div class="form-group">
+            <label for="regFullName">全名（可選）</label>
+            <input type="text" id="regFullName" name="fullName">
+          </div>
+          <div class="form-options">
+            <label class="agree-terms">
+              <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+              我同意 <a href="#" onclick="showTerms()">服務條款</a> 和 <a href="#" onclick="showPrivacy()">隱私政策</a>
+            </label>
+          </div>
+          <button type="submit" class="register-submit-btn">註冊</button>
+        </form>
+        <div class="register-footer">
+          <p>已有帳號？ <a href="#" onclick="switchToLogin()">立即登入</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 圖標選擇器模態框 -->
+  <div id="iconSelectorModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>選擇圖標</h3>
+        <span class="close" onclick="closeIconSelector()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="icon-grid">
+          <div class="icon-option" onclick="selectIcon('📚')">📚</div>
+          <div class="icon-option" onclick="selectIcon('⭐')">⭐</div>
+          <div class="icon-option" onclick="selectIcon('📝')">📝</div>
+          <div class="icon-option" onclick="selectIcon('💬')">💬</div>
+          <div class="icon-option" onclick="selectIcon('🎵')">🎵</div>
+          <div class="icon-option" onclick="selectIcon('🎬')">🎬</div>
+          <div class="icon-option" onclick="selectIcon('🧠')">🧠</div>
+          <div class="icon-option" onclick="selectIcon('📊')">📊</div>
+          <div class="icon-option" onclick="selectIcon('📚')">📚</div>
+          <div class="icon-option" onclick="selectIcon('❓')">❓</div>
+          <div class="icon-option" onclick="selectIcon('🔍')">🔍</div>
+          <div class="icon-option" onclick="selectIcon('💡')">💡</div>
+          <div class="icon-option" onclick="selectIcon('📖')">📖</div>
+          <div class="icon-option" onclick="selectIcon('🎯')">🎯</div>
+          <div class="icon-option" onclick="selectIcon('📋')">📋</div>
+          <div class="icon-option" onclick="selectIcon('🔧')">🔧</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="script.js"></script>
+  <script>
+    // 側邊欄切換功能
+    let sidebarOpen = false;
+    let rightSidebarOpen = true; // iPad 默認顯示右側欄
+    
+    function toggleSidebar() {
+      const sidebar = document.querySelector('.left-sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const mainContent = document.querySelector('.main-content');
+      const toggleBtn = document.getElementById('sidebarToggle');
+      
+      if (sidebarOpen) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    }
+    
+    function openSidebar() {
+      // 先關閉右側欄，避免衝突
+      if (rightSidebarOpen) {
+        closeRightSidebar();
+      }
+      
+      const sidebar = document.querySelector('.left-sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const mainContent = document.querySelector('.main-content');
+      const toggleBtn = document.getElementById('sidebarToggle');
+      
+      if (sidebar) {
+        sidebar.classList.add('show');
+        // 確保手機端樣式正確
+        if (window.innerWidth < 768) {
+          sidebar.style.left = '0';
+        }
+      }
+      if (overlay) overlay.classList.add('show');
+      if (mainContent) {
+        mainContent.classList.add('left-sidebar-open');
+        mainContent.classList.remove('right-sidebar-open');
+        // 為iPad設置動態邊距
+        if (window.innerWidth >= 768) {
+          const sidebarWidth = mainContent.getAttribute('data-sidebar-width') || '400px';
+          mainContent.style.marginLeft = sidebarWidth;
+        }
+      }
+      if (toggleBtn) toggleBtn.classList.add('active');
+      
+      sidebarOpen = true;
+    }
+    
+    function closeSidebar() {
+      const sidebar = document.querySelector('.left-sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const mainContent = document.querySelector('.main-content');
+      const toggleBtn = document.getElementById('sidebarToggle');
+      
+      if (sidebar) {
+        sidebar.classList.remove('show');
+        // 確保手機端樣式正確
+        if (window.innerWidth < 768) {
+          sidebar.style.left = '-100%';
+        }
+      }
+      if (overlay) overlay.classList.remove('show');
+      if (mainContent) {
+        mainContent.classList.remove('left-sidebar-open');
+        // 重置iPad的主內容區域
+        if (window.innerWidth >= 768) {
+          mainContent.style.marginLeft = '0';
+        }
+      }
+      if (toggleBtn) toggleBtn.classList.remove('active');
+      
+      sidebarOpen = false;
+    }
+    
+    // 右側欄切換功能（適用於手機和平板）
+    function toggleRightSidebar() {
+      const rightSidebar = document.querySelector('.right-sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const mainContent = document.querySelector('.main-content');
+      const toggleBtn = document.getElementById('rightSidebarToggle');
+      
+      if (rightSidebarOpen) {
+        closeRightSidebar();
+      } else {
+        openRightSidebar();
+      }
+    }
+    
+    function openRightSidebar() {
+      // 先關閉左側欄，避免衝突
+      if (sidebarOpen) {
+        closeSidebar();
+      }
+      
+      const rightSidebar = document.querySelector('.right-sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const mainContent = document.querySelector('.main-content');
+      const toggleBtn = document.getElementById('rightSidebarToggle');
+      
+      if (rightSidebar) {
+        rightSidebar.classList.add('show');
+        rightSidebar.classList.remove('hidden');
+        // 確保手機端樣式正確
+        if (window.innerWidth < 768) {
+          rightSidebar.style.right = '0';
+        }
+      }
+      if (overlay) overlay.classList.add('show');
+      if (mainContent) {
+        mainContent.classList.add('right-sidebar-open');
+        mainContent.classList.remove('left-sidebar-open');
+        // 為iPad設置動態邊距
+        if (window.innerWidth >= 768) {
+          const sidebarWidth = mainContent.getAttribute('data-sidebar-width') || '400px';
+          mainContent.style.marginRight = sidebarWidth;
+        }
+      }
+      if (toggleBtn) toggleBtn.classList.add('active');
+      
+      rightSidebarOpen = true;
+    }
+    
+    function closeRightSidebar() {
+      const rightSidebar = document.querySelector('.right-sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const mainContent = document.querySelector('.main-content');
+      const toggleBtn = document.getElementById('rightSidebarToggle');
+      
+      if (rightSidebar) {
+        rightSidebar.classList.remove('show');
+        rightSidebar.classList.add('hidden');
+        // 確保手機端樣式正確
+        if (window.innerWidth < 768) {
+          rightSidebar.style.right = '-100%';
+        }
+      }
+      if (overlay) overlay.classList.remove('show');
+      if (mainContent) {
+        mainContent.classList.remove('right-sidebar-open');
+        // 重置iPad的主內容區域
+        if (window.innerWidth >= 768) {
+          mainContent.style.marginRight = '0';
+        }
+      }
+      if (toggleBtn) toggleBtn.classList.remove('active');
+      
+      rightSidebarOpen = false;
+    }
+    
+    // 關閉所有側邊欄
+    function closeAllSidebars() {
+      closeSidebar();
+      closeRightSidebar();
+      
+      // 確保主內容區域重置
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) {
+        mainContent.classList.remove('left-sidebar-open', 'right-sidebar-open');
+        // 重置iPad的主內容區域
+        if (window.innerWidth >= 768) {
+          mainContent.style.marginLeft = '0';
+          mainContent.style.marginRight = '0';
+        }
+      }
+    }
+    
+    // 頁面載入時初始化設備檢測
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初始化設備檢測系統
+      const deviceInfo = window.DeviceDetector.init();
+      
+      // 添加設備信息到控制台
+      console.log('當前設備信息:', deviceInfo);
+      
+      // 可以根據設備類型執行特定邏輯
+      if (deviceInfo.type === 'mobile') {
+        console.log('檢測到移動設備，已啟用手機優化模式');
+        
+        // 手機端調試信息
+        const leftSidebar = document.querySelector('.left-sidebar');
+        const rightSidebar = document.querySelector('.right-sidebar');
+        console.log('左側欄元素:', leftSidebar);
+        console.log('右側欄元素:', rightSidebar);
+        
+        if (leftSidebar) {
+          console.log('左側欄樣式:', {
+            display: leftSidebar.style.display,
+            position: leftSidebar.style.position,
+            left: leftSidebar.style.left,
+            width: leftSidebar.style.width,
+            backgroundColor: leftSidebar.style.backgroundColor
+          });
+        }
+        
+        if (rightSidebar) {
+          console.log('右側欄樣式:', {
+            display: rightSidebar.style.display,
+            position: rightSidebar.style.position,
+            right: rightSidebar.style.right,
+            width: rightSidebar.style.width,
+            backgroundColor: rightSidebar.style.backgroundColor
+          });
+        }
+      } else if (deviceInfo.type === 'tablet') {
+        console.log('檢測到平板設備，已啟用平板優化模式');
+      } else {
+        console.log('檢測到桌面設備，已啟用桌面模式');
+      }
+    });
+  </script>
+</body>
+</html>
