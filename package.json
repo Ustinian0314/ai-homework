@@ -1,30 +1,101 @@
-{
-  "name": "ai-workspace-user-management",
-  "version": "1.0.0",
-  "description": "AI Workspace with user registration and login using BytePlus RDS PostgreSQL",
-  "main": "user-api.js",
-  "scripts": {
-    "start": "node proxy-server.js", // 將這裡改為運行 proxy-server.js
-    "dev": "nodemon user-api.js",
-    "proxy": "node proxy-server.js", // 這個可以保留，作為手動執行的選項
-    "test-db": "node test-db-connection.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "pg": "^8.11.3",
-    "bcrypt": "^5.1.1",
-    "cors": "^2.8.5"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
-  },
-  "keywords": [
-    "ai",
-    "workspace",
-    "postgresql",
-    "byteplus",
-    "user-management"
-  ],
-  "author": "Your Name",
-  "license": "MIT"
-}
+const express = require('express');
+const cors = require('cors');
+const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
+const app = express();
+
+// 中間件設定
+app.use(cors({ origin: '*' })); // 允許所有來源，正式部署可限制為你的前端域名
+app.use(express.json());
+
+// PostgreSQL 連線（使用環境變數，適配 Vercel）
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false } // BytePlus RDS 可能需要
+});
+
+// 測試資料庫連線
+pool.connect((err, client, release) => {
+  if (err) {
+    console.error('Error connecting to PostgreSQL:', err.stack);
+    return;
+  }
+  console.log('Connected to PostgreSQL database');
+  release();
+});
+
+// 路由：用戶註冊
+app.post('/api/register', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    // 檢查用戶是否已存在
+    const userCheck = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    if (userCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+
+    // 加密密碼
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await pool.query('INSERT INTO users (username, password) VALUES ($1, $2)', [username, hashedPassword]);
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 路由：用戶登入
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    // 查詢用戶
+    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    // 驗證密碼
+    const user = result.rows[0];
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    res.json({ message: 'Login successful', user: { username } });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 路由：AI 聊天（佔位符，需替換為實際 AI API）
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    // 假設你使用 xAI Grok API 或其他 AI 服務
+    // 範例：模擬回應（替換為實際 API 呼叫）
+    const aiResponse = `AI response to: ${message}`; // 替換為實際邏輯
+    res.json({ message: aiResponse });
+  } catch (error) {
+    console.error('Chat error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 啟動伺服器，適配 Vercel
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
