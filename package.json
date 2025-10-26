@@ -1,0 +1,30 @@
+{
+  "name": "ai-workspace-user-management",
+  "version": "1.0.0",
+  "description": "AI Workspace with user registration and login using BytePlus RDS PostgreSQL",
+  "main": "user-api.js",
+  "scripts": {
+    "start": "node user-api.js",
+    "dev": "nodemon user-api.js",
+    "proxy": "node proxy-server.js",
+    "test-db": "node test-db-connection.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "ai",
+    "workspace",
+    "postgresql",
+    "byteplus",
+    "user-management"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
